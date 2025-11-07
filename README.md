@@ -1,4 +1,4 @@
-# PolySight SDK
+# PolySight x402 SDK
 
 [![npm version](https://img.shields.io/npm/v/@polysight/sdk.svg)](https://www.npmjs.com/package/@polysight/sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
