@@ -7,6 +7,8 @@ PolySight x402 SDK for building prediction markets (Polymarket-style) on Solana 
 
 **Now with x402 Payment Protocol** - Enable micropayments, AI agent autonomous trading, and pay-per-use model with ultra-low fees!
 
+**🔒 NEW: Zero-Knowledge Privacy Layer** - Privacy-preserving transactions with ZK-SNARKs!
+
 ## Features
 
 ✨ **Full TypeScript Support** - Complete type safety and IntelliSense support  
@@ -17,6 +19,8 @@ PolySight x402 SDK for building prediction markets (Polymarket-style) on Solana 
 📚 **Well Documented** - Comprehensive documentation and examples  
 ⚡ **x402 Micropayments** - HTTP 402 payment protocol for ultra-low fees  
 🤖 **AI Agent Ready** - Autonomous payments for AI agents  
+🔒 **ZK-Proof Privacy** - Zero-knowledge proofs for private transactions  
+🎭 **Privacy Pools** - Anonymous transactions with mixing pools  
 
 ## Installation
 
@@ -94,17 +98,52 @@ const result = await x402Client.placeBetWithX402(
 
 **[📖 Read full x402 Guide →](X402_GUIDE.md)**
 
+## 🔒 Zero-Knowledge Privacy Layer
+
+PolySight SDK now includes **ZK-SNARK privacy layer** for anonymous transactions:
+
+```typescript
+import { PolySightPrivacyClient } from '@polysight/sdk';
+
+// Initialize privacy client
+const privacyClient = new PolySightPrivacyClient(
+  connection,
+  { circuitType: 'groth16', hideAmount: true },
+  { minPoolSize: 10, denomination: new BN(1e9) }
+);
+
+// Place private bet
+const result = await privacyClient.placePrivateBet(
+  'market-123',
+  'YES',
+  1.0,
+  user
+);
+```
+
+**Privacy Features:**
+- 🔐 **ZK-SNARKs** - Groth16 & PLONK protocols
+- 🎭 **Privacy Pools** - Anonymous mixing with merkle trees
+- 🔒 **Encryption** - ChaCha20-Poly1305 & AES-256-GCM
+- 🛡️ **Nullifiers** - Double-spend prevention
+- 📊 **Privacy Levels** - Low, Medium, High, Maximum
+
+**[📖 Read full Privacy Guide →](PRIVACY_LAYER.md)**
+
 ## Table of Contents
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [x402 Micropayments](#-x402-micropayments)
+- [Privacy Layer](#-zero-knowledge-privacy-layer)
 - [Core Concepts](#core-concepts)
 - [Usage Examples](#usage-examples)
 - [x402 Examples](#x402-examples)
+- [Privacy Examples](#privacy-examples)
 - [Advanced Usage](#advanced-usage)
 - [API Reference](#api-reference)
 - [x402 API Reference](#x402-api-reference)
+- [Privacy API Reference](#privacy-api-reference)
 - [Constants](#constants)
 - [Error Handling](#error-handling)
 - [Best Practices](#best-practices)
@@ -368,6 +407,117 @@ const newPricing = x402Client.getPricing();
 console.log('Updated pricing:', newPricing);
 ```
 
+## Privacy Examples
+
+### 1. Place Private Bet
+
+```typescript
+import { PolySightPrivacyClient } from '@polysight/sdk';
+
+// Initialize privacy client
+const privacyClient = new PolySightPrivacyClient(
+  connection,
+  { circuitType: 'groth16', hideAmount: true, hideAddress: true },
+  { minPoolSize: 10, maxPoolSize: 1000, denomination: new BN(1e9) }
+);
+
+// Set privacy level
+privacyClient.setPrivacyLevel({
+  level: 'high',
+  hideAmount: true,
+  hideSender: true,
+  hideReceiver: false,
+  useMixing: true,
+  minAnonymitySet: 10,
+  commitmentScheme: 'poseidon',
+});
+
+// Place private bet
+const result = await privacyClient.placePrivateBet(
+  'btc-100k',
+  Outcome.YES,
+  1.0,
+  user
+);
+
+console.log('Private bet placed:', result.signature);
+console.log('Commitment:', Buffer.from(result.privateBet.commitment).toString('hex'));
+console.log('Anonymity set size:', privacyClient.getAnonymitySetSize());
+```
+
+### 2. Deposit to Privacy Pool
+
+```typescript
+// Deposit to privacy pool for mixing
+const depositAmount = new BN(1e9); // 1 SOL
+const commitment = await privacyClient.depositToPrivacyPool(
+  depositAmount,
+  user
+);
+
+console.log('Deposited to privacy pool');
+console.log('Commitment:', Buffer.from(commitment.commitment).toString('hex'));
+console.log('New anonymity set:', privacyClient.getAnonymitySetSize());
+```
+
+### 3. Private Payment
+
+```typescript
+// Create private payment with ZK-proof
+const paymentAmount = new BN(5e8); // 0.5 SOL
+const paymentProof = await privacyClient.createPrivatePayment(
+  paymentAmount,
+  recipientPubKey,
+  user
+);
+
+// Verify payment
+const isValid = await privacyClient.verifyPrivatePayment(paymentProof);
+console.log('Payment valid:', isValid);
+```
+
+### 4. Backup & Restore Secrets
+
+```typescript
+// Export user secrets (encrypted)
+const password = 'secure-password-123';
+const encryptedSecrets = privacyClient.exportUserSecrets(
+  user.publicKey,
+  password
+);
+
+// Store encrypted backup safely
+console.log('Backup created:', encryptedSecrets.substring(0, 50) + '...');
+
+// Restore from backup
+privacyClient.importUserSecrets(
+  user.publicKey,
+  encryptedSecrets,
+  password
+);
+console.log('Secrets restored successfully');
+```
+
+### 5. Privacy Statistics
+
+```typescript
+// Get privacy statistics
+const stats = privacyClient.getPrivacyStats();
+
+if (stats) {
+  console.log('Total Private Transactions:', stats.totalPrivateTxs);
+  console.log('Total Shielded Amount:', stats.totalShieldedAmount.toString());
+  console.log('Average Anonymity Set:', stats.avgAnonymitySet);
+  console.log('Verification Rate:', (stats.verificationRate * 100).toFixed(2) + '%');
+}
+
+// Check current privacy level
+const level = privacyClient.getPrivacyLevel();
+console.log('Privacy Level:', level.level);
+console.log('Amount Hidden:', level.hideAmount);
+console.log('Using Mixing:', level.useMixing);
+```
+
 ## Advanced Usage
 
 ### Custom Program ID
@@ -536,6 +686,98 @@ interface X402BetOptions {
 }
 ```
 
+## Privacy API Reference
+
+### PolySightPrivacyClient
+
+Extended client with zero-knowledge proof privacy features. Inherits all methods from `PolySightX402Client`.
+
+#### Constructor
+
+```typescript
+constructor(
+  connection: Connection,
+  zkConfig?: ZKProofConfig,
+  privacyPoolConfig?: PrivacyPoolConfig,
+  config?: any
+)
+```
+
+#### Privacy Methods
+
+**Private Transactions:**
+- `placePrivateBet(marketId, outcome, amount, user)` - Place bet with ZK-proof
+- `createPrivatePayment(amount, recipient, payer)` - Create private payment
+- `depositToPrivacyPool(amount, depositor)` - Deposit to privacy pool
+- `withdrawFromPrivacyPool(commitment, recipient, user)` - Withdraw from pool
+- `privateTransfer(amount, recipient, sender)` - Private transfer within pool
+
+**Verification:**
+- `verifyPrivateBet(privateBet)` - Verify private bet commitment
+- `verifyPrivatePayment(paymentProof)` - Verify private payment proof
+
+**Configuration:**
+- `setPrivacyLevel(level)` - Set privacy level (low/medium/high/maximum)
+- `getPrivacyLevel()` - Get current privacy level
+
+**Statistics & Info:**
+- `getPrivacyStats()` - Get privacy statistics
+- `getAnonymitySetSize()` - Get current anonymity set size
+- `hasCommitment(commitment)` - Check if commitment exists
+- `isNullifierUsed(nullifier)` - Check if nullifier is used
+
+**Secret Management:**
+- `exportUserSecrets(user, password)` - Export encrypted secrets
+- `importUserSecrets(user, encryptedSecrets, password)` - Import secrets
+
+### Privacy Types
+
+```typescript
+interface ZKProofConfig {
+  circuitType: 'groth16' | 'plonk';
+  provingKey?: string | Uint8Array;
+  verificationKey?: string | Uint8Array;
+  hideAmount?: boolean;
+  hideAddress?: boolean;
+  hideOutcome?: boolean;
+}
+
+interface PrivacyPoolConfig {
+  minPoolSize: number;
+  maxPoolSize: number;
+  denomination: BN;
+  merkleTreeDepth: number;
+  poolAddress: PublicKey;
+}
+
+interface PrivacyLevel {
+  level: 'low' | 'medium' | 'high' | 'maximum';
+  hideAmount: boolean;
+  hideSender: boolean;
+  hideReceiver: boolean;
+  useMixing: boolean;
+  minAnonymitySet: number;
+  commitmentScheme: 'pedersen' | 'poseidon' | 'sha256';
+}
+
+interface PrivateBetCommitment {
+  commitment: Uint8Array;
+  nullifier: Uint8Array;
+  proof: ZKProof;
+  encryptedData: Uint8Array;
+  marketId: string;
+  timestamp: number;
+}
+
+interface PrivacyStats {
+  totalPrivateTxs: number;
+  totalShieldedAmount: BN;
+  avgAnonymitySet: number;
+  avgProofTime: number;
+  verificationRate: number;
+}
+```
+
 ### Types
 
 ```typescript
@@ -619,6 +861,16 @@ try {
 11. **Handle payment failures** - Implement retry logic for failed payments
 12. **Verify payments** - Always verify on-chain before granting access
 
+### Privacy Specific
+13. **Backup user secrets** - Always export and store encrypted secrets safely
+14. **Use minimum anonymity sets** - Wait for at least 10 participants in pool
+15. **Choose appropriate privacy level** - Balance privacy needs with costs
+16. **Use Poseidon hash** - Most efficient for on-chain ZK verification
+17. **Avoid timing correlations** - Use random delays between transactions
+18. **Verify proofs** - Always verify ZK-proofs before accepting
+19. **Secure secret storage** - Use hardware wallets or encrypted storage
+20. **Monitor nullifiers** - Prevent double-spending attempts
+
 ## Development
 
 ```bash
@@ -654,6 +906,14 @@ Check out the `examples/` directory for complete working examples:
   - Autonomous agent trading
   - Payment statistics
 
+**Privacy Examples:**
+- `privacy-example.ts` - Complete privacy layer demo
+  - Private bet placement
+  - Privacy pool deposits/withdrawals
+  - Private payments
+  - Secret backup/restore
+  - Privacy statistics
+
 **Run Examples:**
 ```bash
 # Install dependencies
@@ -664,6 +924,9 @@ npx ts-node examples/basic-market.ts
 
 # Run x402 example
 npx ts-node examples/x402-micropayments.ts
+
+# Run privacy example
+npx ts-node examples/privacy-example.ts
 ```
 
 ## Contributing
@@ -678,6 +941,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - 📖 **[Complete Documentation](https://docs.polysight.bet/)** - Full SDK documentation
 - 🚀 **[x402 Guide](X402_GUIDE.md)** - Comprehensive x402 payment guide
+- 🔒 **[Privacy Layer Guide](PRIVACY_LAYER.md)** - Zero-knowledge proof privacy guide
 - 📝 **[Quick Start](QUICKSTART.md)** - Get started in 5 minutes
 - 🛠️ **[Setup Guide](SETUP.md)** - Detailed setup instructions
 - 🤝 **[Contributing](CONTRIBUTING.md)** - Contribution guidelines
@@ -701,7 +965,13 @@ Using:
 - [Anchor Framework](https://github.com/coral-xyz/anchor)
 - [TypeScript](https://www.typescriptlang.org/)
 - [x402 Protocol](https://www.x402.org/)
+- [snarkjs](https://github.com/iden3/snarkjs) - ZK-SNARK implementation
+- [circomlibjs](https://github.com/iden3/circomlibjs) - Circom circuits
 
 ---
 
+<<<<<<< HEAD
 **⚡ Powered by Solana's 400ms finality and x402 payment protocol**
+=======
+**⚡ Powered by Solana's 400ms finality, x402 payment protocol, and ZK-SNARK privacy**
+>>>>>>> 800fad8 (feat: implement zero-knowledge proof privacy layer with ZK-SNARKs)

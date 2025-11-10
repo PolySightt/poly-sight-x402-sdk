@@ -19,3 +19,6 @@ export * from './utils';
 
 // x402 module
 export * from './x402';
+
+// Privacy module (ZK-Proof layer)
+export * from './privacy';
